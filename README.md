@@ -20,3 +20,18 @@ cargo run --bin tls-client [port]
 ```
 
 Port is optional above.
+
+## TCP Proxy
+
+To test, run tls-server. Then run the proxy:
+
+```
+cargo run --bin tcp-proxy
+```
+
+Test with client:
+
+```
+cargo run --bin tls-client 50052
+```
+

@@ -4,7 +4,7 @@ pub mod pb {
 
 use futures::Stream;
 use pb::{EchoRequest, EchoResponse};
-use std::pin::Pin;
+use std::{env, pin::Pin};
 use tonic::transport::{Certificate, Identity, Server, ServerTlsConfig};
 use tonic::{Request, Response, Status};
 
@@ -69,11 +69,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .identity(server_identity)
         .client_ca_root(client_ca_cert);
 
-    Server::builder()
-        .tls_config(tls)?
-        .add_service(pb::echo_server::EchoServer::new(server))
-        .serve(addr)
-        .await?;
+    let no_tls = match env::args().nth(1) {
+        Some(arg) => arg == "no-tls",
+        None => false,
+    };
+
+    if no_tls {
+        Server::builder()
+            .add_service(pb::echo_server::EchoServer::new(server))
+            .serve(addr)
+            .await?;
+    } else {
+        Server::builder()
+            .tls_config(tls)?
+            .add_service(pb::echo_server::EchoServer::new(server))
+            .serve(addr)
+            .await?;
+    }
 
     Ok(())
 }
