@@ -16,10 +16,17 @@ path = "src/tls_client_auth/server.rs"
 name = "tcp-proxy"
 path = "src/tcp_proxy/main.rs"
 
+[[bin]]
+name = "tls-term"
+path = "src/tls_term/main.rs"
+
 [dependencies]
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
+rustls = { version = "0.20", default-features = false }
+rustls-pemfile = "1.0"
 tokio = { version = "1.0", features = [ "rt-multi-thread", "time", "fs", "macros", "net",] }
 tonic = { version = "0.7", features = ["tls"] }
+tokio-rustls = "0.23"
 prost = "0.10"
 
 [build-dependencies]

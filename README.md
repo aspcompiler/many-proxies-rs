@@ -23,7 +23,7 @@ Port is optional above.
 
 ## TCP Proxy
 
-To test, run tls-server. Then run the proxy:
+A proxy that simply forwards TCP packets. To test, run tls-server. Then run the proxy:
 
 ```
 cargo run --bin tcp-proxy
@@ -32,6 +32,29 @@ cargo run --bin tcp-proxy
 Test with client:
 
 ```
-cargo run --bin tls-client 50052
+cargo run --bin tls-client -- 50052
 ```
 
+## TSL Terminator
+
+A proxy that decrypt TLS traffic and communicates with backend in clear.
+
+Run server in clear:
+
+```
+cargo run --bin tls-server -- no-tls
+```
+
+Run TLS terminator:
+
+```
+cargo run --bin tls-term
+```
+
+Test with client:
+
+```
+cargo run --bin tls-client -- 50052
+```
+
+Compare this to the [Java/Netty version](https://github.com/aspcompiler/tlsterm)!

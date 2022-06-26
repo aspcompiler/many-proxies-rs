@@ -1,0 +1,156 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tls-client'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tls-client",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tls-client",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tls-client'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tls-client",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tls-client",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tls-server'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tls-server",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tls-server",
+                    "kind": "bin"
+                }
+            },
+            "args": ["no-tls"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tls-server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tls-server",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tls-server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tcp-proxy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tcp-proxy",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tcp-proxy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tcp-proxy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tcp-proxy",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tcp-proxy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tls-term'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tls-term",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tls-term",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tls-term'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tls-term",
+                    "--package=many-proxies-rs"
+                ],
+                "filter": {
+                    "name": "tls-term",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

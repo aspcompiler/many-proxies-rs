@@ -419,7 +419,10 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "prost",
+ "rustls",
+ "rustls-pemfile",
  "tokio",
+ "tokio-rustls",
  "tonic",
  "tonic-build",
 ]
