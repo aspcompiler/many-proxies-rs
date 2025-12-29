@@ -1,0 +1,9 @@
+[package]
+authors = ["Li Chen <dotneteer@gmail.com>"]
+name = "tcp-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = { workspace = true }
+tokio = { workspace = true }

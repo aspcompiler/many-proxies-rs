@@ -1,0 +1,12 @@
+[package]
+authors = ["Li Chen <dotneteer@gmail.com>"]
+name = "tls-term"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = { workspace = true }
+rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+tokio = { workspace = true }
+tokio-rustls = { workspace = true }

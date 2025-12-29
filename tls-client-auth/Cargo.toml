@@ -1,0 +1,25 @@
+[package]
+authors = ["Li Chen <dotneteer@gmail.com>"]
+name = "tls-client-auth"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "tls-client"
+path = "src/client.rs"
+
+[[bin]]
+name = "tls-server"
+path = "src/server.rs"
+
+[dependencies]
+futures = { workspace = true }
+rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+tokio = { workspace = true }
+tonic = { workspace = true }
+tokio-rustls = { workspace = true }
+prost = { workspace = true }
+
+[build-dependencies]
+tonic-build = "0.7"

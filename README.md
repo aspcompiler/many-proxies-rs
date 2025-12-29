@@ -12,11 +12,11 @@ In order to test the proxies, we borrowed [some gRPC examples from the tonic pro
 To run the sample client and server, from separate terminals run:
 
 ```
-cargo run --bin tls-server
+cargo run -p tls-client-auth --bin tls-server
 ```
 
 ```
-cargo run --bin tls-client [port]
+cargo run -p tls-client-auth --bin tls-client -- [port]
 ```
 
 Port is optional above.
@@ -26,13 +26,13 @@ Port is optional above.
 A proxy that simply forwards TCP packets. To test, run tls-server. Then run the proxy:
 
 ```
-cargo run --bin tcp-proxy
+cargo run -p tcp-proxy
 ```
 
 Test with client:
 
 ```
-cargo run --bin tls-client -- 50052
+cargo run -p tls-client-auth --bin tls-client -- 50052
 ```
 
 ## TSL Terminator
@@ -42,19 +42,19 @@ A proxy that decrypt TLS traffic and communicates with backend in clear.
 Run server in clear:
 
 ```
-cargo run --bin tls-server -- no-tls
+cargo run -p tls-client-auth --bin tls-server -- no-tls
 ```
 
 Run TLS terminator:
 
 ```
-cargo run --bin tls-term
+cargo run -p tls-term
 ```
 
 Test with client:
 
 ```
-cargo run --bin tls-client -- 50052
+cargo run -p tls-client-auth --bin tls-client -- 50052
 ```
 
 Compare this to the [Java/Netty version](https://github.com/aspcompiler/tlsterm)!
