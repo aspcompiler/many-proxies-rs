@@ -4,6 +4,8 @@ members = [
     "tcp-proxy",
     "tls-term",
     "tls-client-auth",
+    "hyper-http2-proxy",
+    "pingora-http2-proxy",
 ]
 
 [workspace.dependencies]
