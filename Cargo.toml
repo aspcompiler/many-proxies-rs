@@ -12,7 +12,7 @@ members = [
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
 rustls = { version = "0.20", default-features = false }
 rustls-pemfile = "1.0"
-tokio = { version = "1.0", features = [ "rt-multi-thread", "time", "fs", "macros", "net",] }
+tokio = { version = "1.0", features = [ "rt-multi-thread", "time", "fs", "macros", "net", "io-util",] }
 tonic = { version = "0.7", features = ["tls"] }
 tokio-rustls = "0.23"
 prost = "0.10"
