@@ -11,7 +11,7 @@ use std::sync::Arc;
 use clap::{Parser, ValueEnum};
 use rustls::server::AllowAnyAuthenticatedClient;
 use rustls::RootCertStore;
-use rustls_pemfile::{certs, pkcs8_private_keys};
+use rustls_pemfile::{certs, pkcs8_private_keys, rsa_private_keys};
 use tokio::io::{copy, split, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_rustls::rustls::{self, Certificate, PrivateKey};
@@ -73,7 +73,7 @@ struct Config {
         short = 'c',
         long = "cert-path",
         default_value = "data/tls/server.pem",
-        help = "Path to the server certificate file (PEM format)"
+        help = "Path to the server certificate file (PEM format, .pem/.crt/.cert extensions supported)"
     )]
     cert_path: PathBuf,
 
@@ -82,7 +82,7 @@ struct Config {
         short = 'k',
         long = "key-path",
         default_value = "data/tls/server.key",
-        help = "Path to the server private key file (PKCS#8 format)"
+        help = "Path to the server private key file (PKCS#8 or RSA PEM format supported)"
     )]
     key_path: PathBuf,
 
@@ -90,7 +90,7 @@ struct Config {
     #[arg(
         long = "client-ca-cert-path",
         default_value = "data/tls/client_ca.pem",
-        help = "Path to the client CA certificate file for client authentication (PEM format)"
+        help = "Path to the client CA certificate file for client authentication (PEM format, .pem/.crt/.cert extensions supported)"
     )]
     client_ca_cert_path: PathBuf,
 
@@ -112,15 +112,49 @@ struct Config {
 }
 
 fn load_certs(path: &Path) -> io::Result<Vec<Certificate>> {
-    certs(&mut BufReader::new(File::open(path)?))
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))
-        .map(|mut certs| certs.drain(..).map(Certificate).collect())
+    let certs_result = certs(&mut BufReader::new(File::open(path)?))
+        .map_err(|_| io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("Invalid certificate format in {}", path.display())
+        ))?;
+    
+    let certs: Vec<Certificate> = certs_result.into_iter().map(Certificate).collect();
+    
+    if certs.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("No certificates found in {}. Ensure the file contains PEM-encoded certificates", path.display())
+        ));
+    }
+    
+    debug!("Loaded {} certificate(s) from {}", certs.len(), path.display());
+    Ok(certs)
 }
 
 fn load_keys(path: &Path) -> io::Result<Vec<PrivateKey>> {
-    pkcs8_private_keys(&mut BufReader::new(File::open(path)?))
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid key"))
-        .map(|mut keys| keys.drain(..).map(PrivateKey).collect())
+    let file_contents = std::fs::read(path)?;
+    
+    // Try PKCS#8 format first (-----BEGIN PRIVATE KEY-----)
+    if let Ok(keys) = pkcs8_private_keys(&mut file_contents.as_slice()) {
+        if !keys.is_empty() {
+            debug!("Loaded {} PKCS#8 private key(s) from {}", keys.len(), path.display());
+            return Ok(keys.into_iter().map(PrivateKey).collect());
+        }
+    }
+    
+    // Try RSA private key format (-----BEGIN RSA PRIVATE KEY-----)
+    if let Ok(keys) = rsa_private_keys(&mut file_contents.as_slice()) {
+        if !keys.is_empty() {
+            debug!("Loaded {} RSA private key(s) from {}", keys.len(), path.display());
+            return Ok(keys.into_iter().map(PrivateKey).collect());
+        }
+    }
+    
+    // If no keys were found in any format, return a descriptive error
+    Err(io::Error::new(
+        io::ErrorKind::InvalidInput,
+        format!("No valid private keys found in {}. Supported formats: PKCS#8 (-----BEGIN PRIVATE KEY-----) and RSA PEM (-----BEGIN RSA PRIVATE KEY-----)", path.display())
+    ))
 }
 
 #[tokio::main]
@@ -190,7 +224,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     debug!("Loading certificates from {:?}", config.cert_path);
 
     let cert = load_certs(&config.cert_path)?;
-    let mut key = load_keys(&config.key_path)?;
+    let mut keys = load_keys(&config.key_path)?;
+
+    // Validate that we have at least one private key (this should not happen with the enhanced load_keys function, but adding as safety)
+    if keys.is_empty() {
+        error!("No private keys were loaded from {}", config.key_path.display());
+        return Err("No private keys available for TLS configuration".into());
+    }
+
+    let private_key = keys.remove(0);
+    debug!("Using first private key for TLS configuration");
 
     let client_ca_cert = load_certs(&config.client_ca_cert_path)?;
     let mut client_auth_roots = RootCertStore::empty();
@@ -201,7 +244,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut tls_config = rustls::ServerConfig::builder()
         .with_safe_defaults()
         .with_client_cert_verifier(AllowAnyAuthenticatedClient::new(client_auth_roots))
-        .with_single_cert(cert, key.remove(0))?;
+        .with_single_cert(cert, private_key)?;
     tls_config.alpn_protocols = vec![b"h2".to_vec()];
 
     let acceptor = TlsAcceptor::from(Arc::new(tls_config));
