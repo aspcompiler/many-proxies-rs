@@ -17,7 +17,8 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_rustls::rustls::{self, Certificate, PrivateKey};
 use tokio_rustls::{server::TlsStream, TlsAcceptor};
 use tracing::{debug, error, info, instrument, warn, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{fmt, prelude::*, EnvFilter, FmtSubscriber};
+use tracing_appender;
 
 /// Log level for tracing output
 #[derive(ValueEnum, Clone, Debug)]
@@ -101,6 +102,13 @@ struct Config {
         help = "Set the logging level (error, warn, info, debug, trace)"
     )]
     log_level: LogLevel,
+
+    /// Optional directory path for file logging with daily rotation
+    #[arg(
+        long = "log-path",
+        help = "Directory path for log files with daily rotation (logs to console if not specified)"
+    )]
+    log_path: Option<PathBuf>,
 }
 
 fn load_certs(path: &Path) -> io::Result<Vec<Certificate>> {
@@ -119,14 +127,48 @@ fn load_keys(path: &Path) -> io::Result<Vec<PrivateKey>> {
 async fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::parse();
 
-    // Initialize tracing subscriber with the specified log level
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::from(config.log_level.clone()))
-        .with_target(false)
-        .finish();
-    
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing subscriber");
+    // Initialize tracing subscriber based on log configuration
+    match &config.log_path {
+        Some(log_dir) => {
+            // File logging with daily rotation
+            if let Err(e) = std::fs::create_dir_all(log_dir) {
+                eprintln!("Failed to create log directory {}: {}", log_dir.display(), e);
+                return Err(format!("Failed to create log directory {}: {}", log_dir.display(), e).into());
+            }
+
+            let file_appender = tracing_appender::rolling::daily(log_dir, "tls-term.log");
+            let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+            
+            let subscriber = tracing_subscriber::registry()
+                .with(
+                    fmt::layer()
+                        .with_writer(non_blocking)
+                        .with_target(false)
+                        .with_ansi(false) // Disable ANSI colors for file output
+                )
+                .with(EnvFilter::from_default_env().add_directive(Level::from(config.log_level.clone()).into()));
+
+            tracing::subscriber::set_global_default(subscriber)
+                .expect("Failed to set tracing subscriber");
+
+            // Store guard to prevent it from being dropped
+            std::mem::forget(_guard);
+
+            info!("Logging to file: {}/tls-term.log.YYYY-MM-DD", log_dir.display());
+        }
+        None => {
+            // Console logging (original behavior)
+            let subscriber = FmtSubscriber::builder()
+                .with_max_level(Level::from(config.log_level.clone()))
+                .with_target(false)
+                .finish();
+            
+            tracing::subscriber::set_global_default(subscriber)
+                .expect("Failed to set tracing subscriber");
+
+            info!("Logging to console");
+        }
+    }
 
     info!("Starting TLS terminating proxy");
     debug!("Configuration: {:?}", config);
