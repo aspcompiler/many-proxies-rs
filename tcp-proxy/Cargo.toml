@@ -7,3 +7,4 @@ edition = "2021"
 [dependencies]
 futures = { workspace = true }
 tokio = { workspace = true }
+libc = "0.2"

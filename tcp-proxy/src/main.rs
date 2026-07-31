@@ -9,6 +9,7 @@ use tokio::net::{TcpListener, TcpStream};
 use futures::FutureExt;
 use std::env;
 use std::error::Error;
+use std::net::{Ipv6Addr, SocketAddrV6, ToSocketAddrs};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -37,8 +38,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn resolve_addr(addr: &str) -> Result<std::net::SocketAddr, Box<dyn Error>> {
+    // Try standard parsing first
+    if let Ok(sock) = addr.parse::<std::net::SocketAddr>() {
+        return Ok(sock);
+    }
+
+    // Handle [ipv6%zone]:port format
+    if let Some(s) = addr.strip_prefix('[') {
+        if let Some((host_zone, port_str)) = s.rsplit_once("]:") {
+            let port: u16 = port_str.parse()?;
+            if let Some((ip_str, zone)) = host_zone.rsplit_once('%') {
+                let ip: Ipv6Addr = ip_str.parse()?;
+                let scope_id = zone.parse::<u32>().unwrap_or_else(|_| {
+                    unsafe { libc::if_nametoindex(std::ffi::CString::new(zone).unwrap().as_ptr()) }
+                });
+                return Ok(std::net::SocketAddr::V6(SocketAddrV6::new(ip, port, 0, scope_id)));
+            }
+        }
+    }
+
+    // Fall back to DNS resolution
+    addr.to_socket_addrs()?
+        .next()
+        .ok_or_else(|| "could not resolve address".into())
+}
+
 async fn transfer(mut inbound: TcpStream, proxy_addr: String) -> Result<(), Box<dyn Error>> {
-    let mut outbound = TcpStream::connect(proxy_addr).await?;
+    let resolved = resolve_addr(&proxy_addr)?;
+    let mut outbound = TcpStream::connect(resolved).await?;
 
     let (mut ri, mut wi) = inbound.split();
     let (mut ro, mut wo) = outbound.split();
